@@ -89,7 +89,7 @@ def total_value(cards):
         else:
             total_value += int(value)
     
-    aces = cards.count('A')
+    aces = values.count('A')
     while total_value > 21 and aces:
         total_value -= 10
         aces -= 1
