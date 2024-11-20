@@ -24,83 +24,82 @@ Data Structure:
 - Tuples make more sense since the cards can't be changed 
 """
 
-"""
-Import needed modules
-Initialize the deck and global variables
-"""
-
 # Import modules:
 import random
-import pdb
 
-"""
-Define functions here
-"""
+# Global variables:
+suites = ['D', 'H', 'C', 'S']
+cards = list(range(2, 11)) + ['J', 'Q', 'K', 'A']
+HIDDEN_CARD = ('X', 'X')
 
 # Define functions here:
-# Note: Will upgrade to multiple players later (max of 6 players 1 dealer)
 def prompt(message):
+    """Adds and arrow --> to signify game prompts"""
     print(f'--> {message}')
 
 def display_hands(players):
+    """Keeps dealer hand hidden except for one face-up card"""
     prompt(f"Dealer: {players['Dealer'][0]} {HIDDEN_CARD * (len(players['Dealer']) - 1)}")
-    
     for player in players:
         if player != 'Dealer':
             prompt(f'{player} Total Value: {total_value(players[player])}')
             prompt(f'{player}: {players[player]}')
 
 def display_full_hands(players):
+    """Used after determining winner, to show all hands"""
     for player in players:
         prompt(f'{player} Total Value: {total_value(players[player])}')
         prompt(f'{player}: {players[player]}')
 
-# def alternate_player(current_player):
-#     if current_player == 'Player':
-#         return 'Dealer'
-#     elif current_player == 'Dealer':
-#         return 'Player'
-
 def deal(players, deck):
+    """Only used for the initial deal"""
     for player in players:
         while len(players[player]) < 2:
-            hit(player, deck)
+            hit(players, player, deck)
 
-def hit(current_player, deck):
+def hit(players, current_player, deck):
+    """Used for both player and computer turns"""
     card = random.choice(deck)
     players[current_player].append(card)
     deck.remove(card)
 
-def bust(cards):
-    return total_value(cards) > 21
+def bust(hand):
+    """Returns True if value over 21"""
+    return total_value(hand) > 21
 
-def twenty_one(cards):
-    return total_value(cards) == 21
+def twenty_one(hand):
+    """Returns True if value is 21"""
+    return total_value(hand) == 21
 
-def total_value(cards):
-    values = [card[1] for card in cards]
-    total_value = 0
-    
+def total_value(hand):
+    """Calculates total value of a hand, taking into account aces"""
+    values = [card[1] for card in hand]
+    total = 0
     for value in values:
         if value in ['J', 'Q', 'K']:
-            total_value += 10
+            total += 10
         elif value == 'A':
-            total_value += 11
+            total += 11
         else:
-            total_value += int(value)
+            total += int(value)
     
     aces = values.count('A')
-    while total_value > 21 and aces:
-        total_value -= 10
+    while total > 21 and aces:
+        total -= 10
         aces -= 1
     
-    return total_value
+    return total
 
 def determine_winner(players):
+    """
+    Used after all moves have been made.
+    First calculates best score <= 21, then finds players matching that score. 
+    Prints a messages and displays all hands. 
+    """
     best_score = 0
     for player in players:
         score = total_value(players[player])
-        if score > best_score and score <= 21:
+        if best_score < score <= 21:
             best_score = score
 
     winner = []
@@ -113,90 +112,85 @@ def determine_winner(players):
     if len(winner) > 1:
         prompt(f'Tie: {", ".join(winner)}')
     elif len(winner) == 0:
-        prompt(f'Dealer Wins')
+        prompt('Dealer Wins')
     else:
         prompt(f'{winner[0]} Wins')
 
-"""
-Define game loops here
-
-For player:
-1. Ask player to hit or stay
-2. If stay stop asking
-3. If hit, show total value of cards, your hand, and check:
-    a. Did I bust?
-    b. Did I get 21?
-    c. If neither, repeat at step 1
-
-For computer:
-1. Always hit if total value is less than 17
-2. Hit until value between 17-21 or bust
-"""
-
-def player_turn(players):
-    
-    cards = players['Player']
-    
+def player_turn(players, deck):
+    """
+    For player game loop:
+    1. Ask player to hit or stay
+    2. If stay stop asking
+    3. If hit, show total value of cards, your hand, and check:
+        a. Did I bust?
+        b. Did I get 21?
+        c. If neither, repeat at step 1
+    """
+    hand = players['Player']
     while True:
         display_hands(players)
         
-        if not twenty_one(cards):
+        if not twenty_one(hand):
             prompt('Hit or Stay?')
             decision = input().lower()
-            
-            if decision == 'stay':
+        
+            if decision == 'hit':
+                hit(players, 'Player', deck)
+            elif decision == 'stay':
                 break
-            elif decision == 'hit':
-                hit('Player', deck)
-            
-        if bust(cards):
+        
+        if bust(hand):
             prompt("You've busted!")
             break
-        elif twenty_one(cards):
+        if twenty_one(hand):
             prompt("You got 21!")
             break
 
-def computer_turn(players):
-    
-    # Change this to take into account multiple players later
+def computer_turn(players, deck):
+    """
+    For computer game loop:
+    1. Always hit if total value is less than 17
+    2. Hit until value between 17-21 or bust
+    """
     if bust(players['Player']):
         return
+    
+    hand = players['Dealer']
+    while total_value(hand) < 17:
+        hit(players, 'Dealer', deck)
         
-    cards = players['Dealer']
-
-    while total_value(cards) < 17:
-        hit('Dealer', deck)
-
-        if bust(cards):
+        if bust(hand):
             prompt("Dealer busted!")
             break
-        elif twenty_one(cards):
+        if twenty_one(hand):
             prompt("Dealer got 21!")
             break
 
 def play_game():
-    deal(players, deck)
-    player_turn(players)
-    computer_turn(players)
-    determine_winner(players)
-
-# Initialize the deck here:
-suites = ['D', 'H', 'C', 'S']
-cards = [num for num in range(2, 11)] + ['J', 'Q', 'K', 'A']
-HIDDEN_CARD = ('X', 'X')
-
-deck = list()
-for suite in suites:
-    for card in cards:
-        deck.append(tuple((suite, card)))
-
-# Initialize hands here: 
-# Can turn players into objects later that way we can initialize multiple 
-players = {
-    'Dealer': [],
-    'Player': []
-}
-
-# current_player = 'Player'
+    """
+    Initiates the deck contained in a list. Cards are tuples.
+    Initiates players (player and dealer) in a dictionary. Values are hands.
+    Currently only supports single player. Can expand to multi-player. 
+    """
+    while True:
+        deck = []
+        for suite in suites:
+            for card in cards:
+                deck.append(tuple((suite, card)))
+        
+        players = {
+            'Dealer': [],
+            'Player': []
+        }
+        
+        deal(players, deck)
+        player_turn(players, deck)
+        computer_turn(players, deck)
+        determine_winner(players)
+        
+        prompt('Play again? Yes or No?')
+        again = input()
+        if again[0].lower() == 'n':
+            break
 
 play_game()
