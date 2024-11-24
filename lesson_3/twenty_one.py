@@ -12,11 +12,11 @@ Pseudocode:
     - Ask player to hit or stay.
     - If stay, stop asking.
     - Repeat until bust, 21, or stay.
-4. If player bust, dealer wins.
-5. Dealer turn: hit or stay
-   - Repeat until total >= 17
-6. If dealer busts, player wins.
-7. Compare cards and declare winner.
+    - If player bust, dealer wins (if single player) or player loses (in multi)
+4. Dealer turn: hit or stay
+    - Repeat until total >= 17
+    - If dealer busts, player(s) win.
+5. Compare cards and declare winner.
 
 Data Structure: 
 - We could use a dictionary, a list of lists or tuples, or a list 
@@ -60,7 +60,8 @@ def deal(players, deck):
 def hit(players, current_player, deck):
     """Used for both player and computer turns"""
     card = random.choice(deck)
-    players[current_player].append(card)
+    hand = players[current_player]
+    hand.append(card)
     deck.remove(card)
 
 def bust(hand):
@@ -108,7 +109,6 @@ def determine_winner(players):
             winner.append(player)
     
     display_full_hands(players)
-
     if len(winner) > 1:
         prompt(f'Tie: {", ".join(winner)}')
     elif len(winner) == 0:
@@ -129,21 +129,18 @@ def player_turn(players, deck):
     hand = players['Player']
     while True:
         display_hands(players)
-        
-        if not twenty_one(hand):
-            prompt('Hit or Stay?')
-            decision = input().lower()
-        
-            if decision == 'hit':
-                hit(players, 'Player', deck)
-            elif decision == 'stay':
-                break
-        
         if bust(hand):
             prompt("You've busted!")
             break
         if twenty_one(hand):
             prompt("You got 21!")
+            break        
+        
+        prompt('Hit or Stay?')
+        decision = input().lower()
+        if decision == 'hit':
+            hit(players, 'Player', deck)
+        elif decision == 'stay':
             break
 
 def computer_turn(players, deck):
@@ -158,7 +155,6 @@ def computer_turn(players, deck):
     hand = players['Dealer']
     while total_value(hand) < 17:
         hit(players, 'Dealer', deck)
-        
         if bust(hand):
             prompt("Dealer busted!")
             break
